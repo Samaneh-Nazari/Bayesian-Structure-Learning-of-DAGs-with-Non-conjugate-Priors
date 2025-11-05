@@ -40,63 +40,6 @@ fa <- function(node, DAG) {
 }
 
 
-rnodeDAGWishart <- function(node, DAG, aj, U) {
-  q <- ncol(data)
-  n <- nrow(data)
-
-  j <- node
-  pa <- pa(j, DAG)
-
-  out <- list(sigmaj = 0, Lj = 0)
-
-  if (length(pa) == 0) {
-    U_jj <- U[j,j]
-    out$sigmaj <- stats::rgamma(1, shape = aj/2, rate = U_jj/2)
-  } else {
-    U_paj.j <- U[pa,j]
-    invU_papa <- solve(U[pa,pa])
-    U_jj <- U[j,j] - t(U_paj.j)%*%invU_papa%*%U_paj.j
-
-    out$sigmaj <- stats::rgamma(1, shape = aj/2, rate = U_jj/2)
-    out$Lj <- mvtnorm::rmvnorm(1, -invU_papa%*%U_paj.j, out$sigmaj*invU_papa)
-  }
-
-  return(out)
-}
-
-
-rDAGWishart <- function(n, DAG, a, U) {
-
-  q <- ncol(DAG)
-  ajs <- sapply(1:q, function(j) a+sum(DAG[,j]==1)-q+1)
-
-  L.array <- array(0, dim = c(q,q,n))
-  D.array <- array(0, dim = c(q,q,n))
-
-  for (i in 1:n) {
-    params <- lapply(1:q, function(j) rnodeDAGWishart(j, DAG, ajs[j], U))
-
-    sigmas <- sapply(1:q, function(x) params[[x]]$sigmaj)
-    L <- lapply(1:q, function(x) params[[x]]$Lj)
-
-    D.array[,,i] <- diag(sigmas)
-    for (j in 1:q) {
-      whc <- which(DAG[,j] == 1)
-      L.array[whc,j,i] <- as.numeric(L[[j]])
-    }
-    diag(L.array[,,i]) <- 1
-  }
-
-  if (n == 1) {
-    D.array <- D.array[,,1]
-    L.array <- L.array[,,1]
-  }
-
-  return(list(D = D.array, L = L.array))
-}
-
-
-
 
 rnodeDAGWishart1 <- function(node, DAG, aj, U, tXX, data) {
   q <- ncol(data)
@@ -770,6 +713,7 @@ F1[i]=(2*la[i][[1]][2,2])/(2*la[i][[1]][2,2]+la[i][[1]][1,2]+la[i][[1]][2,1])
 MISR[i]=(la[i][[1]][1,2]+la[i][[1]][2,1])/(q*(q-1))
 print(list(unlist1,hamming_distances,SEN,SPE1,AC,mcc,table(DAG,MAP),la,F1,MISR))
 }
+
 
 
 
